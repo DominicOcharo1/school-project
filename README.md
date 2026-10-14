@@ -1,757 +1,321 @@
-Worked for 1m 18s
+Worked for 3m 17s
 
-We will create a new Excel sheet called Feedback Dashboard that summarizes feedback requests by client, shows how many requests are Completed, In Progress, or Requested, and includes charts to make the information easy to understand.
+The best way to do this is to create a new worksheet called Q1 Feedback Coverage. It will compare each employee’s total engagement hours against the feedback records in `HC_Report_Extract_202`, identify employees who meet the 37.5-hour threshold, and flag anyone who does not have a feedback record.
 
-I will explain every step, from opening your worksheet to creating the final dashboard.
+You do not need to change your existing `Feedback Dashboard` or the `Client / Project` helper column you added in AS.
 
-### What your finished Excel dashboard will contain
+### 1\. What the additional analysis will show
 
-### FEEDBACK REQUEST DASHBOARD
+Your new worksheet will contain a table like this:
 
-Summary by Client / Project
+| Employee Name (Q1) | Employee Name (HC) | Total Hours | Feedback Records | Coverage Result  |
+| ------------------ | ------------------ | ----------- | ---------------- | ---------------- |
+| Sidialo, Sharon    | Sharon Sidialo     | 45.0        | 0                | MISSING FEEDBACK |
+| Kakae, Jackson     | Jackson Kakae      | 217.5       | 0                | MISSING FEEDBACK |
+| Kinyanjui, Grace   | Grace Kinyanjui    | 248.0       | 1                | Feedback found   |
+| Owino, Beatrice    | Beatrice Owino     | 37.5        | 1                | Feedback found   |
 
-Completed
+These examples illustrate the intended layout. The feedback counts must come from your workbook, not be entered manually.
 
-### 125
+The important rules are:
 
-Illustrative count
+* Add up each employee’s hours using the individual project rows in `Q1 Engagement`.
 
-In Progress
+* Exclude the rows labelled, for example, `Sidialo, Sharon Total`, because those are already subtotal rows.
 
-### 48
+* Include employees whose total is 37.5 hours or more.
 
-Illustrative count
+* Reverse the employee name format from `Last, First` to `First Last` before comparing it with column B in `HC_Report_Extract_202`.
 
-Requested
+* If an eligible employee has no matching feedback record, flag them as `MISSING FEEDBACK`.
 
-### 32
+I will use 37.5 hours or more (≥37.5) because that is the threshold specified in your final requirement. An employee with exactly 37.5 hours must therefore be included.
 
-Illustrative count
+### 2\. Step 1 — Create the new worksheet
 
-### 1\. Feedback requests by client
+Create a separate sheet
 
-A stacked bar chart comparing the three statuses for each client or project.
+At the bottom of Excel, click the `+` icon beside the sheet tabs. Double-click the new sheet tab and rename it:
 
-### 2\. Overall feedback status distribution
+`Q1 Feedback Coverage`
 
-A doughnut chart showing the proportion of requests in each status.
+Press Enter.
 
-The numbers and charts above are examples to show the intended layout. They are not calculated from your workbook.
+Prepare the heading and table
 
-Your real dashboard will use the figures from your sheet named `HC_Report_Extract_202`.
+Enter `Q1 ENGAGEMENT — FEEDBACK COVERAGE ANALYSIS` in cell A1.
 
-### Part 1: Understand the columns we will use
+In A2, enter:
 
-Your original sheet has data in columns A to O. We will use the following three columns and add one helper column.
+`Checks whether employees with at least 37.5 engagement hours have a feedback record.`
 
-| Column | Header                     | Purpose                                                            |
-| ------ | -------------------------- | ------------------------------------------------------------------ |
-| H      | Status of Feedback request | Tells us whether a request is Completed, In Progress, or Requested |
-| L      | Project Name               | Used when Client Name is null                                      |
-| N      | Client Name                | Used as the primary name                                           |
-| P      | Client / Project           | A new helper column that decides which name to use                 |
+Then enter the following column headings in row 4.
 
-The most important rule is:
+| Cell | Heading                   |
+| ---- | ------------------------- |
+| A4   | Employee Name (Q1)        |
+| B4   | Employee Name (HC Format) |
+| C4   | Total Q1 Hours            |
+| D4   | Threshold Met?            |
+| E4   | Feedback Record Count     |
+| F4   | Coverage Result           |
+| G4   | Completed Records         |
+| H4   | In Progress Records       |
+| I4   | Requested Records         |
 
-* If Client Name contains a real name, use that name.
+The table starts at row 5, leaving rows 1–3 available for the title and explanation.
 
-* If Client Name is blank or contains the word `null`, use Project Name instead.
+### 3\. Step 2 — Generate the list of employees without the Total rows
+
+Go to cell A5 in the new sheet.
+
+Copy and paste this formula:
+
+```excel
+=SORT(UNIQUE(FILTER('Q1 Engagement'!$A$3:$A$504,('Q1 Engagement'!$A$3:$A$504<>"")*ISERROR(SEARCH(" Total",'Q1 Engagement'!$A$3:$A$504)))))
+```
+
+Press Enter.
+
+This formula does three things:
+
+* Reads the employee names in column A of `Q1 Engagement`.
+
+* Excludes blank cells and rows containing ` Total`, so the subtotal lines are not treated as employees.
+
+* Removes duplicate names and sorts the remaining names alphabetically.
+
+Your employee list should now spill down automatically from A5. Do not type into the cells underneath the formula, because Excel needs those cells available for the results.
+
+This formula requires a version of Excel that supports `SORT`, `UNIQUE` and `FILTER`, such as Microsoft 365.
+
+### 4\. Step 3 — Convert the employee names into the HC format
+
+This is one of the most important steps.
+
+Your Q1 sheet contains names such as:
+
+`Sidialo, Sharon`
+
+But column B in `HC_Report_Extract_202` contains:
+
+`Sharon Sidialo`
+
+We need Excel to convert each name before checking whether feedback exists.
+
+Click cell B5 and enter:
+
+```excel
+=IF(A5="","",IFERROR(TRIM(MID(A5,FIND(",",A5)+1,LEN(A5))&" "&LEFT(A5,FIND(",",A5)-1)),"CHECK NAME FORMAT"))
+```
+
+Press Enter.
+
+The formula takes the text after the comma and puts it first, followed by the text before the comma.
 
 For example:
 
-| Client Name (N) | Project Name (L) | Client / Project (P) |
-| --------------- | ---------------- | -------------------- |
-| ABC Limited     | Website Upgrade  | ABC Limited          |
-| null            | Payroll System   | Payroll System       |
-| XYZ Company     | Network Upgrade  | XYZ Company          |
-| (blank)         | Mobile App       | Mobile App           |
+| Original name    | Converted name  |
+| ---------------- | --------------- |
+| Sidialo, Sharon  | Sharon Sidialo  |
+| Kakae, Jackson   | Jackson Kakae   |
+| Kinyanjui, Grace | Grace Kinyanjui |
+| Owino, Beatrice  | Beatrice Owino  |
 
-We need the helper column because a PivotTable needs one consistent field to group records by the correct name.
+The formula also trims unnecessary spaces and flags any name it cannot convert as `CHECK NAME FORMAT`.
 
-### Part 2: Prepare your original data
+### 5\. Step 4 — Calculate total hours for each employee
 
-### Step 1: Open your Excel file
+Click cell C5 and enter:
 
-* Open your Excel workbook.
+```excel
+=IF(A5="","",SUMIF('Q1 Engagement'!$A$3:$A$504,A5,'Q1 Engagement'!$E$3:$E$504))
+```
 
-* Look at the sheet tabs at the bottom of Excel.
+Press Enter.
 
-* Find and click the tab named `HC_Report_Extract_202`.
+This formula adds the hours in column E of `Q1 Engagement` for every project that matches the employee in column A.
 
-* You should now see your original data.
+Why this avoids double counting: the formula looks for an exact employee name, such as `Sidialo, Sharon`. The separate row called `Sidialo, Sharon Total` does not match that exact name, so its subtotal is excluded.
 
-* Press Ctrl + S on your keyboard to save the workbook.
+For example, Sharon's two projects are 22.5 hours each. The formula returns:
 
-For additional protection, you can also use File → Save As to create a backup copy before making changes.
+22.5 + 22.5 = 45 hours.
 
-### Step 2: Check that the column headings are correct
+Do not add the existing subtotal row to this calculation. The formula already calculates the total directly from the project records.
 
-Look at the first row of your data.
+### 6\. Step 5 — Check whether the employee meets the threshold
 
-Check these cells:
+Click D5 and enter:
 
-* Click cell `H1`. It should say `Status of Feedback request`.
+```excel
+=IF(A5="","",IF(C5>=37.5,"Yes","No"))
+```
 
-* Click cell `L1`. It should say `Project Name`.
+Press Enter.
 
-* Click cell `N1`. It should say `Client Name`.
+Employees with 37.5 hours or more will display `Yes`. Employees with fewer than 37.5 hours will display `No`.
 
-The instructions below assume that row 1 contains your column headings and row 2 contains your first data record.
+### 7\. Step 6 — Check whether a feedback record exists
 
-Do not delete any of your original records.
+Now we compare the converted employee names against column B in `HC_Report_Extract_202`.
 
-### Step 3: Convert your data into an Excel Table
+Click E5 and enter:
 
-An Excel Table helps formulas fill down automatically and makes your PivotTables easier to update when new records are added.
+```excel
+=IF(A5="","",COUNTIF('HC_Report_Extract_202'!$B:$B,B5))
+```
 
-First, click any cell containing data on the `HC_Report_Extract_202` sheet.
+Press Enter.
 
-Now follow these steps:
+This counts how many records in `HC_Report_Extract_202` contain the employee's converted name.
 
-* Press Ctrl + T on your keyboard.
+* A result of `0` means no matching employee-name record was found.
 
-* A small window called Create Table should appear.
+* A result of `1` means one feedback record was found.
 
-* Look at the proposed cell range. It should cover your original data from columns A to O.
+* A result greater than `1` means the employee appears in multiple feedback records.
 
-* Make sure the checkbox labelled My table has headers is ticked.
+We count records, rather than simply checking whether the employee appears once, because an employee may have received feedback from multiple people or on multiple engagements.
 
-* Click OK.
+### 8\. Step 7 — Automatically flag employees who need follow-up
 
-Your data should now have filter arrows beside the column headings, and the rows may have alternating colours.
+Click F5 and enter:
 
-Important: If your data already has these features and is already an Excel Table, do not create another one. Just click inside it and continue.
+```excel
+=IF(A5="","",IF(C5<37.5,"Below threshold",IF(E5>0,"Feedback found","MISSING FEEDBACK")))
+```
 
-### Step 4: Give the table a name
+Press Enter.
 
-This makes it easier to identify the correct source data later.
+This is the main result of your analysis.
 
-* Click any cell inside the table.
+| Condition                                                    | Coverage Result  |
+| ------------------------------------------------------------ | ---------------- |
+| Total hours below 37.5                                       | Below threshold  |
+| Total hours at least 37.5, with one or more feedback records | Feedback found   |
+| Total hours at least 37.5, with zero feedback records        | MISSING FEEDBACK |
 
-* Look at the top ribbon in Excel.
+This makes the analysis easy to interpret: every eligible employee without a feedback record is clearly identified.
 
-* Click the Table Design tab. In some versions, it may simply say Table or Table Design under Table Tools.
+### 9\. Step 8 — Show the feedback statuses for each employee
 
-* Find the box labelled Table Name, usually near the left side of the ribbon.
+These three optional columns add useful detail. They show whether the employee's existing feedback records are Completed, In Progress or Requested.
 
-* Click inside that box.
+In G5, enter:
 
-* Delete the existing name.
+```excel
+=IF(A5="","",COUNTIFS('HC_Report_Extract_202'!$B:$B,B5,'HC_Report_Extract_202'!$H:$H,"Completed"))
+```
 
-* Type:
+In H5, enter:
 
-`FeedbackData`
+```excel
+=IF(A5="","",COUNTIFS('HC_Report_Extract_202'!$B:$B,B5,'HC_Report_Extract_202'!$H:$H,"In Progress"))
+```
 
-8\. Press Enter.
+In I5, enter:
 
-Your source table is now called `FeedbackData`.
+```excel
+=IF(A5="","",COUNTIFS('HC_Report_Extract_202'!$B:$B,B5,'HC_Report_Extract_202'!$H:$H,"Requested"))
+```
 
-### Part 3: Create the Client / Project helper column
+Press Enter after each formula.
 
-### Step 5: Add a new column in P
+These columns use the actual feedback status in column H of your original sheet. They count feedback records for the employee, so their totals may exceed one when an employee has multiple records.
 
-Go back to the worksheet `HC_Report_Extract_202`, if you are not already there.
+### 10\. Step 9 — Fill all the formulas down
 
-* Look at the column letters along the top: A, B, C, and so on.
+You have now entered formulas in B5 through I5.
 
-* Find column P, immediately to the right of column O.
+To apply them to the rest of the employee list:
 
-* Click cell `P1`.
+* Select the range `B5:I506`.
 
-* Type the following heading:
+* Press Ctrl + D on your keyboard to fill the formulas down from row 5.
 
-`Client / Project`
+* Check that the formulas return values alongside the employee names in column A.
 
-5\. Press Enter.
+The range extends beyond the current number of employees so that there is room for all names in your present source range. The formulas will return blank results for rows where column A has no employee name.
 
-If Excel does not automatically extend your existing table to include column P, we will correct that in Step 7.
+Do not fill down over A5, because that cell contains the dynamic employee-list formula.
 
-### Step 6: Enter the formula
+### 11\. Step 10 — Add a summary showing the overall compliance position
 
-Click cell `P2`.
+A detailed employee list is useful, but a summary will make the findings easier to communicate.
 
-Copy the formula below and paste it into the formula bar or directly into the cell.
+Enter these headings:
 
-Formula for cell P2
+* K4: `Summary Measure`
 
-=IF(OR(TRIM(N2&"")="",LOWER(TRIM(N2&""))="null"),TRIM(L2&""),TRIM(N2&""))
+* L4: `Result`
 
-Copy formula
+Then enter the following labels and formulas:
 
-After pasting the formula:
+| Cell | Summary measure                     | Formula in column L                      |
+| ---- | ----------------------------------- | ---------------------------------------- |
+| K5   | Total distinct employees            | =COUNTA(A5#)                             |
+| K6   | Employees at or above 37.5 hours    | =COUNTIF(C5:C506,">=37.5")               |
+| K7   | Eligible employees with feedback    | =COUNTIFS(C5:C506,">=37.5",E5:E506,">0") |
+| K8   | Eligible employees missing feedback | =COUNTIF(F5:F506,"MISSING FEEDBACK")     |
+| K9   | Feedback coverage rate              | =IFERROR(L7/(L7+L8),0)                   |
 
-* Press Enter.
+For example, enter the formula for K5's result in L5, the formula for K6's result in L6, and so on.
 
-* Look at cell P2.
+Format L9 as a percentage using Home → Number → Percentage.
 
-* Check whether the result is the client name or project name, depending on the contents of columns N and L.
+The coverage rate indicates what proportion of employees who meet the hours threshold have at least one matching feedback record.
 
-### What does the formula do?
+### 12\. Step 11 — Format the analysis so the exceptions stand out
 
-It examines the value in `N2`, which is the Client Name.
+Make the sheet professional and easy to read.
 
-If the client name is blank or contains `null`, it takes the project name from `L2`. Otherwise, it uses the client name from `N2`.
+* Select A1 and make the title bold, with a larger font.
 
-It also handles entries such as `NULL`, `Null`, and names with accidental spaces around them.
+* Format A4:I4 as a coloured header row with bold, white text.
 
-For example, if N2 contains `null` and L2 contains `Payroll System`, P2 should display `Payroll System`.
+* Format C5:C506 as a number with one decimal place.
 
-Note: This formula assumes your Excel uses commas between formula arguments. If Excel rejects it because of your regional settings, replace the commas separating the arguments with semicolons.
+* Apply filters by selecting `A4:I506` and choosing Data → Filter.
 
-### Step 7: Make sure the formula is applied to every record
+* Select column F and use Home → Conditional Formatting → Highlight Cells Rules → Text that Contains to highlight `MISSING FEEDBACK` in red.
 
-This is very important. We do not want to calculate the correct name only for the first row.
+* Optionally, highlight `Feedback found` in green and `Below threshold` in a neutral colour.
 
-### If your data is an Excel Table
+The filter on column F is particularly useful. Choose `MISSING FEEDBACK` to see only the employees who meet the hours threshold but do not have a matching feedback record.
 
-After entering the formula in P2, Excel will normally fill the formula down the entire column automatically.
+You can also create a simple bar chart using the summary measures for eligible employees with feedback versus eligible employees missing feedback. This provides a quick visual of the compliance gap.
 
-* Scroll down column P.
+### 13\. What your current workbook shows
 
-* Check that the formula has produced a result for the other records.
+I checked the data in your attached workbook and compared the names after converting the Q1 name format to the HC format.
 
-* If the results are filled down, continue to Step 8.
+Distinct Q1 employees
 
-### If only P2 contains a result
+### 108
 
-Check the following:
+Meet ≥37.5 hours
 
-* Click cell P2.
+### 107
 
-* Look at the Table Design tab.
+Eligible employees with feedback
 
-* If column P is outside the table, choose Table Design → Resize Table.
+### 34
 
-* In the range box, change the table's final column from O to P, keeping the correct first and last row numbers. For example, if your final row is 528, the range would end with `$P$528`.
+Eligible employees with no match
 
-* Click OK.
+### 73
 
-Then enter the formula in the first data cell under `Client / Project` again. Excel should fill the calculated column down the table.
+Current matching coverage
 
-If your data is not a Table, convert the full range, including column P, into a Table using Ctrl + T, and ensure My table has headers is ticked.
+### 31.8%
 
-### Step 8: Check the three important columns
+Based on the currently supplied data, using the ≥37.5-hour threshold and employee-name matching.
 
-Before creating PivotTables, confirm that:
+This means 73 of the 107 eligible employees currently have no matching employee-name record in `HC_Report_Extract_202`. Those are the records to investigate first.
 
-* Column H contains the feedback status.
+There is also one employee below the threshold in the current Q1 data: Abel Legesse, with 15 hours. Beatrice Owino has exactly 37.5 hours and is included in the eligible group.
 
-* Column L contains Project Name.
+Before treating the 73 unmatched employees as confirmed missing feedback, verify any differences in spelling, name order or extra spaces. A name mismatch can produce a zero count even when a corresponding feedback record exists under a slightly different name.
 
-* Column N contains Client Name.
-
-* Column P contains the correct client or project name for every record.
-
-For the rest of this exercise, column P is the field that we will use to group the requests.
-
-### Part 4: Create your new dashboard worksheet
-
-### Step 9: Add a new sheet
-
-At the bottom of Excel, find the + sign next to your worksheet tabs.
-
-* Click the + sign.
-
-* Excel will create a new worksheet.
-
-* Double-click the new sheet's tab.
-
-* Type `Feedback Dashboard`.
-
-* Press Enter.
-
-You should now have two sheets:
-
-* `HC_Report_Extract_202` — your original data.
-
-* `Feedback Dashboard` — your new summary and charts.
-
-We will leave the original data in place and build the report on the new sheet.
-
-### Part 5: Create the first PivotTable — summary by client
-
-This is the main summary table. It will show the number of Completed, In Progress, and Requested feedback requests for each client or project.
-
-### Step 10: Start creating the PivotTable
-
-* Click the `HC_Report_Extract_202` sheet.
-
-* Click any cell inside the `FeedbackData` table.
-
-* On the ribbon at the top, click Insert.
-
-* Click PivotTable or From Table/Range, depending on your Excel version.
-
-* A window called Create PivotTable will open.
-
-* Make sure the table or range shows `FeedbackData` or the corresponding range covering your data, including column P.
-
-* Choose New Worksheet.
-
-* Click OK.
-
-Excel creates a new worksheet containing an empty PivotTable and opens the PivotTable Fields panel.
-
-### Step 11: Rename the new PivotTable sheet
-
-At the bottom of Excel, find the newly created sheet tab.
-
-* Double-click its name.
-
-* Type `Feedback Dashboard`.
-
-* Press Enter.
-
-* If you already created a sheet with this name, use that existing sheet as the destination instead. Excel does not permit two worksheets with identical names.
-
-We want the first PivotTable near the top-left of this dashboard. Excel usually starts it around cell A3 on a new PivotTable sheet.
-
-### Step 12: Understand the PivotTable Fields panel
-
-On the right-hand side, you should see a list of field names from your original data, including:
-
-* Status of Feedback request
-
-* Project Name
-
-* Client Name
-
-* Client / Project
-
-Below those field names, there are four boxes:
-
-| Box     | Purpose                                    |
-| ------- | ------------------------------------------ |
-| Filters | Filters the whole PivotTable               |
-| Columns | Creates separate columns for categories    |
-| Rows    | Creates one row for each client or project |
-| Values  | Calculates counts or other numbers         |
-
-We will drag fields into these boxes.
-
-### Step 13: Add Client / Project to Rows
-
-* In the PivotTable Fields panel, find `Client / Project`.
-
-* Click and hold it with your mouse.
-
-* Drag it into the box labelled Rows.
-
-* Release your mouse.
-
-Your PivotTable should now list client or project names down the left side.
-
-### Step 14: Add the status field to Columns
-
-* Find `Status of Feedback request`.
-
-* Click and hold it.
-
-* Drag it into the box labelled Columns.
-
-* Release your mouse.
-
-Your PivotTable should now have separate columns for statuses such as Completed, In Progress, and Requested.
-
-### Step 15: Add a count to Values
-
-We now need Excel to count the number of feedback records.
-
-* Find `Client / Project` again in the field list.
-
-* Drag it a second time into the Values box.
-
-* Excel should create a field called something like Count of Client / Project.
-
-It is okay to use the same field twice: once for the rows and once for the count.
-
-The Values box should use Count, not Sum. If Excel has selected a different calculation:
-
-* Click the arrow beside the field in the Values box.
-
-* Choose Value Field Settings.
-
-* Select Count.
-
-* Click OK.
-
-Why are we counting `Client / Project` instead of the status field? It allows Excel to count each record with a client/project name, including records where the status might be blank. A missing status will appear in a separate blank category rather than silently disappearing.
-
-### Step 16: Check the result
-
-Your first PivotTable should look similar to this example:
-
-| Client / Project | Completed | In Progress | Requested | Grand Total |
-| ---------------- | --------- | ----------- | --------- | ----------- |
-| ABC Limited      | 12        | 4           | 3         | 19          |
-| XYZ Company      | 8         | 6           | 2         | 16          |
-| Payroll System   | 5         | 2           | 7         | 14          |
-| Grand Total      | 25        | 12          | 12        | 49          |
-
-These figures are examples only.
-
-Your actual numbers will depend on the records in your workbook.
-
-Each row represents a client or project, and the counts show how many feedback records are in each status.
-
-If you see a `(blank)` column, some records may have missing status values. Check the original status column rather than assuming the blank records belong to one of the three statuses.
-
-### Part 6: Format the main PivotTable
-
-### Step 17: Make it easy to read
-
-* Click any cell inside the first PivotTable.
-
-* Look for the Design tab under PivotTable Tools.
-
-* Click Design.
-
-* Find the PivotTable Styles section.
-
-* Select a style that has a clear header and alternating row colours.
-
-* Make sure the Grand Total row remains visible.
-
-You can also adjust the column widths by double-clicking the boundary between column letters at the top of Excel.
-
-For example, double-click the boundary between columns A and B to automatically fit column A to the client names.
-
-### Step 18: Add a heading to the dashboard
-
-Click cell `A1` on the `Feedback Dashboard` sheet, above the PivotTable, and type:
-
-FEEDBACK REQUEST DASHBOARD
-
-Then:
-
-* Press Enter.
-
-* Select A1.
-
-* Click Home.
-
-* Make the font bold.
-
-* Increase the font size to approximately 18 or 20.
-
-* Choose a dark blue font colour if you like.
-
-In A2, type:
-
-`Summary of feedback requests by client or project`
-
-This explains what the sheet contains.
-
-Keep the heading above the PivotTable and do not type over any cells containing PivotTable data.
-
-### Part 7: Create the first chart — feedback requests by client
-
-This chart will show how the three feedback statuses are distributed for each client or project.
-
-### Step 19: Insert a PivotChart
-
-* Click any cell inside your first PivotTable.
-
-* Click the PivotTable Analyze tab. In some versions, it may simply say Analyze.
-
-* Click PivotChart.
-
-If you cannot find PivotChart there, click the Insert tab and look for the PivotChart option.
-
-* A chart selection window will appear.
-
-* Select Bar from the chart categories.
-
-* Choose Stacked Bar.
-
-* Click OK.
-
-Excel will create a chart linked to the client-summary PivotTable.
-
-A stacked bar is useful because each client gets one horizontal bar, divided into the three feedback statuses.
-
-### Step 20: Move the chart to the right side
-
-The chart may appear on top of the PivotTable. That is normal.
-
-To move it:
-
-* Click the outer border of the chart, not one of the bars.
-
-* Hold down your mouse button.
-
-* Drag the chart towards the right-hand side of the worksheet, starting around column K.
-
-* Release the mouse button.
-
-* Resize it by dragging one of the corner handles until the chart is large enough to read.
-
-Try to keep the first PivotTable on the left and the chart on the right.
-
-If you have many clients, make the chart taller so the labels are easier to read.
-
-### Step 21: Give the chart a title
-
-* Click the chart once.
-
-* Click the chart title.
-
-* Replace the title with:
-
-`Feedback Requests by Client / Project`
-
-If the chart does not have a title, click the chart, go to Chart Design → Add Chart Element → Chart Title → Above Chart, and then enter the title.
-
-### Step 22: Check the legend
-
-Your chart should identify the three feedback statuses:
-
-* Completed
-
-* In Progress
-
-* Requested
-
-If a status is missing from the legend, check that the original data contains that status and that the field has been placed in the PivotTable's Columns box.
-
-The bar lengths should change according to the number of feedback requests associated with each client or project.
-
-### Part 8: Create a second PivotTable — overall status distribution
-
-The first PivotTable answers this question:
-
-How many feedback requests does each client or project have in each status?
-
-The second PivotTable answers a different question:
-
-How many feedback requests are Completed, In Progress, and Requested across the entire dataset?
-
-### Step 23: Start another PivotTable
-
-* Click the `HC_Report_Extract_202` sheet.
-
-* Click any cell inside the `FeedbackData` table.
-
-* Click Insert → PivotTable.
-
-* Confirm that the source is `FeedbackData`.
-
-* Select Existing Worksheet.
-
-* Click inside the Location box.
-
-* Enter the location `'Feedback Dashboard'!$H$3`.
-
-* Click OK.
-
-This creates the second PivotTable on the dashboard, starting around cell H3, away from the first PivotTable.
-
-If your Excel version does not accept the typed location, click the small range-selection button beside the Location box, choose the `Feedback Dashboard` tab and cell H3, and confirm the selection.
-
-### Step 24: Set up the second PivotTable
-
-In the PivotTable Fields panel:
-
-* Drag `Status of Feedback request` into Rows.
-
-* Drag `Client / Project` into Values.
-
-* Check that the Values field uses Count.
-
-Your second PivotTable should look similar to this:
-
-| Status of Feedback request | Count of Client / Project |
-| -------------------------- | ------------------------- |
-| Completed                  | 125                       |
-| In Progress                | 48                        |
-| Requested                  | 32                        |
-| Grand Total                | 205                       |
-
-Again, these are illustrative figures rather than your actual data.
-
-This table gives you the totals for the entire dataset, regardless of which client or project the records belong to.
-
-### Step 25: Check for blank categories
-
-Look at the rows of the second PivotTable.
-
-If you see `(blank)` as one of the statuses, it means there are records whose Status of Feedback request is empty.
-
-Since you expect only three statuses, you should investigate those missing values in the original sheet. For the chart, you can filter out `(blank)` to display only the three requested statuses, but do not lose track of the records that need correcting.
-
-### Part 9: Create a doughnut chart showing the overall distribution
-
-### Step 26: Insert the chart
-
-* Click any cell inside the second PivotTable.
-
-* Click PivotTable Analyze → PivotChart.
-
-* Choose Pie from the chart categories.
-
-* Select Doughnut.
-
-* Click OK.
-
-Excel will create a doughnut chart linked to the second PivotTable.
-
-If a blank category appears, filter it from the chart using the status field button, or correct the source data as appropriate.
-
-### Step 27: Move the chart
-
-* Click the outside border of the doughnut chart.
-
-* Drag it to the right side of the sheet, below the first chart, starting around column K.
-
-* Resize it using the corner handles.
-
-Keep the doughnut chart separate from the first chart so that the two visuals do not cover one another.
-
-### Step 28: Change the title
-
-Click the chart title and replace it with:
-
-`Overall Feedback Status Distribution`
-
-If there is no title, use Chart Design → Add Chart Element → Chart Title → Above Chart.
-
-### Step 29: Add labels and percentages
-
-This step makes the chart much easier to understand.
-
-* Click the doughnut chart.
-
-* Click the small + button next to the chart, or use Chart Design → Add Chart Element.
-
-* Select Data Labels.
-
-* Open the data-label options, which may be accessed by clicking the arrow beside Data Labels or choosing More Options.
-
-* In the Format Data Labels panel, select Category Name and Percentage.
-
-* If you prefer a less crowded chart, deselect Value so the chart shows the status name and percentage rather than all three label components.
-
-Now each slice should be identifiable as Completed, In Progress, or Requested, with its share of the total.
-
-The percentage for a status is:
-
-\\text{Percentage}=
-\\frac{\\text{Number of requests in that status}}
-{\\text{Total requests}}\\times100
-
-Excel calculates the displayed percentages from the chart data.
-
-### Part 10: Arrange and finish your dashboard
-
-### Step 30: Arrange the worksheet
-
-Your dashboard should have a layout similar to this:
-
-### FEEDBACK REQUEST DASHBOARD
-
-Client and project feedback tracking
-
-### PivotTable 1
-
-Client / Project and status counts
-
-Completed | In Progress | Requested | Total
-
-### PivotTable 2
-
-Overall status totals
-
-Completed | In Progress | Requested
-
-### Bar Chart
-
-Feedback requests by client or project
-
-### Doughnut Chart
-
-Overall distribution by status
-
-Suggested arrangement, not a screenshot of your workbook.
-
-To finish the layout:
-
-* Keep the main client-summary PivotTable on the left.
-
-* Keep the overall status PivotTable nearby, under or beside it.
-
-* Position the stacked bar chart and doughnut chart on the right.
-
-* Make sure all chart titles and labels are readable.
-
-* If charts cover the PivotTables, drag them to an empty area.
-
-* Optionally, click View and untick Gridlines for a cleaner dashboard appearance.
-
-* Press Ctrl + S to save the workbook.
-
-### Step 31: Make sure everything is counting correctly
-
-Perform these checks before relying on the report.
-
-| Check                   | What you should see                                                   |
-| ----------------------- | --------------------------------------------------------------------- |
-| Client Name is not null | The client's name appears in Client / Project                         |
-| Client Name is null     | The Project Name appears in Client / Project                          |
-| Completed records       | Counted under Completed                                               |
-| In Progress records     | Counted under In Progress                                             |
-| Requested records       | Counted under Requested                                               |
-| Grand Total             | Total of the three statuses, plus any blank-status records if present |
-
-The sum of the three status counts should equal the overall count of feedback requests when every request has one of those three statuses.
-
-If the totals do not match, check for blank statuses, blank client and project names, or other unexpected data values.
-
-### Part 11: How to update the dashboard when your data changes
-
-This is the final and important step. You do not need to rebuild the report every time the source data changes.
-
-When you add new feedback records:
-
-* Go to `HC_Report_Extract_202`.
-
-* Add the new records inside the `FeedbackData` table, at the bottom.
-
-* Enter the Client Name, Project Name and Status of Feedback request.
-
-* Check that the Client / Project formula fills down for the new row.
-
-* Return to `Feedback Dashboard`.
-
-* Click any cell inside one of the PivotTables.
-
-* Click PivotTable Analyze → Refresh. Alternatively, go to Data → Refresh All to refresh both PivotTables.
-
-* Check that the tables and charts reflect the updated data.
-
-* Press Ctrl + S to save.
-
-The charts are linked to the PivotTables, so refreshing the PivotTables updates the chart data as well.
-
-### Your final checklist
-
-### Dashboard completion checklist
-
-0 of 8
-
-Original data is still intact on HC_Report_Extract_202
-
-Column P contains the correct Client / Project values
-
-The source table includes column P and is named FeedbackData
-
-Feedback Dashboard contains the client-summary PivotTable
-
-The overall status PivotTable shows Completed, In Progress and Requested
-
-The stacked bar chart compares statuses by client/project
-
-The doughnut chart shows the overall status distribution
-
-Grand totals have been checked and the workbook has been saved
-
-The key to getting the right result is column P. Once that helper column is correct, both PivotTables and both charts will group requests by the actual Client Name when available, or the Project Name when the client name is null.
+Final recommendation: keep `Feedback Dashboard` for the existing client/project and status analysis, and use `Q1 Feedback Coverage` for this separate employee-level control. Together, the two sheets will show both the status of feedback requests and whether employees who have reached the required engagement hours have a feedback record.
